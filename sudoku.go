@@ -29,3 +29,35 @@ func (grid *Grid) updateState(i int, value int) {
 		}
 	}
 }
+
+func (grid *Grid) solve() bool {
+	if len(grid.resolveQueue) == 0 {
+		grid.processGroups()
+	}
+
+	// no more cells to process, check if grid has been solved
+	if len(grid.resolveQueue) == 0 {
+		for _, cell := range grid.cells {
+			if cell.state != CellStateResolved {
+				return false
+			}
+		}
+		return true
+	}
+
+	cell := &grid.cells[grid.resolveQueue[0]]
+	grid.resolveQueue = grid.resolveQueue[1:]
+	if cell.state == CellStateResolved {
+		// illegal state
+		return false
+	}
+	value := bits.TrailingZeros(cell.state)
+	cell.value = value
+	cell.state = CellStateResolved
+
+	// update states of associated cells
+	for _, associatedCell := range cell.associatedCells {
+		grid.updateState(associatedCell, value)
+	}
+	return grid.solve()
+}
