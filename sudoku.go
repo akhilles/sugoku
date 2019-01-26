@@ -30,6 +30,10 @@ func (grid *Grid) updateState(i int, value int) {
 	}
 }
 
+func (grid *Grid) processGroups() {
+
+}
+
 func (grid *Grid) solve() bool {
 	if len(grid.resolveQueue) == 0 {
 		grid.processGroups()
