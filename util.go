@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 func (grid *Grid) init() {
 	grid.resolveQueue = make([]int, 0, GridSize*GridSize)
@@ -19,6 +22,7 @@ func (grid *Grid) init() {
 	for i := range grid.cells {
 		cell := &grid.cells[i]
 		cell.state = CellStateUnresolved
+		cell.value = -1
 
 		associatedCells := make(map[int]bool)
 		for _, groupId := range cellGroups[i] {
@@ -40,12 +44,23 @@ func (grid *Grid) addToResolveQueue(i int, value int) {
 	grid.resolveQueue = append(grid.resolveQueue, i)
 }
 
-func (grid *Grid) print() {
+func (grid *Grid) load(gridState string) {
+	gridState = strings.Join(strings.Fields(gridState), "")
+	for i, c := range gridState {
+		val := c - '1'
+		if val < 0 || val > 8 {
+			continue
+		}
+		grid.addToResolveQueue(i, int(val))
+	}
+}
+
+func (grid *Grid) print(debug bool) {
 	for i, cell := range grid.cells {
-		if cell.state == CellStateResolved {
-			fmt.Printf("%2v(%9b) ", cell.value, cell.state)
+		if debug {
+			fmt.Printf("%2v(%9b) ", cell.value+1, cell.state)
 		} else {
-			fmt.Printf(" -(%9b) ", cell.state)
+			fmt.Printf("%2v ", cell.value+1)
 		}
 		if (i+1)%GridSize == 0 {
 			fmt.Println()
