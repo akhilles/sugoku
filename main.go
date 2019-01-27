@@ -1,16 +1,15 @@
 package main
 
-import (
-	"fmt"
-)
+import "fmt"
 
 func main() {
 	grid := Grid{}
 	grid.init()
-	grid.addToResolveQueue(22, 6)
-	grid.addToResolveQueue(66, 6)
 
+	grid.load(`000500000035000100600009300020005490940206000057003600060000000000704856074001002`)
+
+	grid.print(true)
 	fmt.Println(grid.solve())
-
-	grid.print()
+	fmt.Println()
+	grid.print(false)
 }

@@ -1,11 +1,14 @@
 package main
 
-import "math/bits"
+import (
+	"fmt"
+	"math/bits"
+)
 
 const GridSize = 9
 const MiniGridSize = 3
-const CellStateResolved = 0
-const CellStateUnresolved = 0x1FF
+const CellStateResolved uint = 0
+const CellStateUnresolved uint = 0x1FF
 
 type Cell struct {
 	state           uint
@@ -30,13 +33,31 @@ func (grid *Grid) updateState(i int, value int) {
 	}
 }
 
+// TODO: maybe optimize with references instead of values
 func (grid *Grid) processGroups() {
-
+	for _, group := range grid.groups {
+		oneCell := CellStateResolved
+		multiCell := CellStateResolved
+		for _, cellId := range group {
+			multiCell |= oneCell & grid.cells[cellId].state
+			oneCell |= grid.cells[cellId].state
+		}
+		oneCell &^= multiCell
+		for _, cellId := range group {
+			if oneCell & grid.cells[cellId].state != 0 && bits.OnesCount(grid.cells[cellId].state) > 1 {
+				grid.cells[cellId].state &= oneCell
+				grid.resolveQueue = append(grid.resolveQueue, cellId)
+			}
+		}
+	}
 }
 
 func (grid *Grid) solve() bool {
+	// fmt.Println("Q LEN --> ", len(grid.resolveQueue))
 	if len(grid.resolveQueue) == 0 {
+		fmt.Print("GROUP PROCESSING!!! --> ")
 		grid.processGroups()
+		fmt.Println(len(grid.resolveQueue))
 	}
 
 	// no more cells to process, check if grid has been solved
@@ -53,6 +74,7 @@ func (grid *Grid) solve() bool {
 	grid.resolveQueue = grid.resolveQueue[1:]
 	if cell.state == CellStateResolved {
 		// illegal state
+		println("ILLEGAL STATE")
 		return false
 	}
 	value := bits.TrailingZeros(cell.state)
