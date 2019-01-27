@@ -5,10 +5,11 @@ import (
 	"strings"
 )
 
-func (grid *Grid) init() {
-	grid.resolveQueue = make([]int, 0, GridSize*GridSize)
+func initGridInfo() *GridInfo {
+	gridLinks := &GridInfo{}
+
 	var cellGroups [GridSize * GridSize][3]int
-	for i := range grid.cells {
+	for i := range gridLinks.linkedCells {
 		rowId := i / GridSize
 		colId := i % GridSize
 		miniGridId := (rowId/MiniGridSize)*MiniGridSize + (colId / MiniGridSize)
@@ -16,27 +17,36 @@ func (grid *Grid) init() {
 		cellGroups[i][1] = GridSize+colId
 		cellGroups[i][2] = GridSize*2+miniGridId
 		for _, groupId := range cellGroups[i] {
-			grid.groups[groupId] = append(grid.groups[groupId], i)
+			gridLinks.groups[groupId] = append(gridLinks.groups[groupId], i)
 		}
 	}
-	for i := range grid.cells {
-		cell := &grid.cells[i]
-		cell.state = CellStateUnresolved
-		cell.value = -1
-
+	for i := range gridLinks.linkedCells {
+		links := &gridLinks.linkedCells[i]
 		associatedCells := make(map[int]bool)
 		for _, groupId := range cellGroups[i] {
-			for _, cellId := range grid.groups[groupId] {
+			for _, cellId := range gridLinks.groups[groupId] {
 				associatedCells[cellId] = true
 			}
 		}
 		delete(associatedCells, i)
 		i := 0
 		for k := range associatedCells {
-			cell.associatedCells[i] = k
+			links[i] = k
 			i++
 		}
 	}
+	return gridLinks
+}
+
+func initGrid() *Grid {
+	grid := &Grid{}
+	grid.resolveQueue = make([]int, 0, GridSize*GridSize)
+	for i := range grid.cells {
+		cell := &grid.cells[i]
+		cell.state = CellStateUnresolved
+		cell.value = -1
+	}
+	return grid
 }
 
 func (grid *Grid) addToResolveQueue(i int, value int) {

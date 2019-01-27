@@ -10,19 +10,26 @@ const MiniGridSize = 3
 const CellStateResolved uint = 0
 const CellStateUnresolved uint = 0x1FF
 
+var gridInfo = initGridInfo()
+
 type Cell struct {
-	state           uint
-	value           int
-	associatedCells [20]int
+	state uint
+	value int
 }
 
 type Grid struct {
 	cells        [GridSize * GridSize]Cell
-	groups       [GridSize * 3][]int
+	// TODO: switch to fixed size stack (more performant)
 	resolveQueue []int
+	resolved     int
 }
 
-func (grid *Grid) updateState(i int, value int) {
+type GridInfo struct {
+	linkedCells [GridSize*GridSize][20]int
+	groups      [GridSize * 3][]int
+}
+
+func (grid *Grid) updateCellState(i int, value int) {
 	cell := &grid.cells[i]
 	var stateModifier uint = 1 << uint(value)
 	if cell.state&stateModifier != 0 {
@@ -35,7 +42,7 @@ func (grid *Grid) updateState(i int, value int) {
 
 // TODO: maybe optimize with references instead of values
 func (grid *Grid) processGroups() {
-	for _, group := range grid.groups {
+	for _, group := range gridInfo.groups {
 		oneCell := CellStateResolved
 		multiCell := CellStateResolved
 		for _, cellId := range group {
@@ -44,7 +51,7 @@ func (grid *Grid) processGroups() {
 		}
 		oneCell &^= multiCell
 		for _, cellId := range group {
-			if oneCell & grid.cells[cellId].state != 0 && bits.OnesCount(grid.cells[cellId].state) > 1 {
+			if oneCell&grid.cells[cellId].state != 0 && bits.OnesCount(grid.cells[cellId].state) > 1 {
 				grid.cells[cellId].state &= oneCell
 				grid.resolveQueue = append(grid.resolveQueue, cellId)
 			}
@@ -60,18 +67,18 @@ func (grid *Grid) solve() bool {
 		fmt.Println(len(grid.resolveQueue))
 	}
 
-	// no more cells to process, check if grid has been solved
 	if len(grid.resolveQueue) == 0 {
-		for _, cell := range grid.cells {
-			if cell.state != CellStateResolved {
-				return false
-			}
+		if grid.resolved == GridSize*GridSize {
+			return true
 		}
-		return true
+		numSolutions := 0
+		// start guessing
+		return numSolutions == 1
 	}
 
-	cell := &grid.cells[grid.resolveQueue[0]]
+	cellIndex := grid.resolveQueue[0]
 	grid.resolveQueue = grid.resolveQueue[1:]
+	cell := &grid.cells[cellIndex]
 	if cell.state == CellStateResolved {
 		// illegal state
 		println("ILLEGAL STATE")
@@ -80,10 +87,11 @@ func (grid *Grid) solve() bool {
 	value := bits.TrailingZeros(cell.state)
 	cell.value = value
 	cell.state = CellStateResolved
+	grid.resolved++
 
-	// update states of associated cells
-	for _, associatedCell := range cell.associatedCells {
-		grid.updateState(associatedCell, value)
+	// update states of associated linkedCells
+	for _, associatedCell := range gridInfo.linkedCells[cellIndex] {
+		grid.updateCellState(associatedCell, value)
 	}
 	return grid.solve()
 }
