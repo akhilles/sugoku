@@ -68,7 +68,7 @@ func (grid *Grid) load(gridState string) {
 func (grid *Grid) print(debug bool) {
 	for i, cell := range grid.cells {
 		if debug {
-			fmt.Printf("%2v(%9b) ", cell.value+1, cell.state)
+			fmt.Printf("(%9b) ", cell.state)
 		} else {
 			fmt.Printf("%2v ", cell.value+1)
 		}
